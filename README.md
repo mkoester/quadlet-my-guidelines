@@ -4,15 +4,32 @@
 
 In this document I want to collect my guidelines / best practises when it comes to hosting services on a (virtual) server.
 I prefer to use **Fedora**, but this should work on all (linux) systems supporting **Podman** and **quadlets**.
+You need to be able to run commands via **sudo** to set everything up (or run every service with your user account, which I would not recommend).
+In this document I am going to use **nano** as the *file editor*, but every other editor like **vim** or **emacs** would also work similarly.
 
 ## (service) users
 
 For best isolation, I would create one dedicated user account per service I want to run.
-One could use service accounts, but they usually don't have the necessary ranges for user and group IDs created automatically.
-Therefore, I use regular users and create their home directory in [/var/lib](https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s08.html).
+One could use service accounts, but they usually don't have the necessary ranges for user and group sub IDs created automatically (needed to run rootless podman containers).
+Therefore, we use regular users and create their home directory in [/var/lib](https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s08.html).
 
-E.g. for a service called <service_name>, I would create a user with no login shell
+E.g. for a service called <service_name>, we would create a user with *no login shell*
 
 ```sh
 sudo useradd -m -d /var/lib/service_name -s /usr/sbin/nologin service_name
 ```
+
+In order for the service to be able run in the user's context when the user itself is not logged in, we have to allow his processes to persist
+
+```sh
+sudo loginctl enable-linger service_name
+```
+Since we need to create and store the quadlet service definitions, we create the proper directory as follows:
+
+```sh
+sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
+```
+
+## service directories / permanent storage / volumes
+
+## service definition / quadlet files
