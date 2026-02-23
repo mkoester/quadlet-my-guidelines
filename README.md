@@ -50,6 +50,11 @@ sudo -u service_name mkdir -p ~service_name/{data,config}
 ### several containers
 
 In case a service requires several containers to operate, I prefer to create one directory per container.
-Inside these I would then create the necessary subdirectories for each container individually.
+Inside these I would then create the necessary subdirectories for each container individually, e.g.
+
+```sh
+sudo -u service_name mkdir -p ~service_name/container_name_1/{data,config}
+sudo -u service_name mkdir -p ~service_name/container_name_2/{data,config,cache}
+```
 
 ## service definition / quadlet files
