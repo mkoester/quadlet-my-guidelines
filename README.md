@@ -218,6 +218,24 @@ Data and state directories are mounted writable (the default):
 Volume=%h/data:/var/lib/service_name:Z
 ```
 
+#### container runs as a different UID
+
+`UserNS=keep-id:uid=1000,gid=1000` maps container UID 1000 to the host service user. If the image runs as a different UID (e.g. `472` for Grafana, `999` for some databases), the bind-mounted directories will be inaccessible to the container process because their host-side ownership does not match.
+
+If the image supports configuring its runtime user via environment variables (commonly `PUID` / `PGID`), setting those to `1000` in the `.env` file is simpler and avoids the ownership problem entirely.
+
+But if not, you need to fix ownership. First check which UID the image uses:
+
+```sh
+sudo -u service_name podman inspect <image> --format '{{.Config.User}}'
+```
+
+Then fix ownership using `podman unshare`, which runs the command inside the service user's namespace — so UID `<uid>` inside the namespace refers to the container process user, not a host UID:
+
+```sh
+sudo -u service_name podman unshare chown -R <uid>:<gid> ~service_name/data
+```
+
 ### Environment variables
 
 Environment variables are passed to the container via `.env` files referenced in the `Container` section:
