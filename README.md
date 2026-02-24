@@ -120,10 +120,66 @@ HealthTimeout=10s
 HealthRetries=3
 ```
 
-- `Image` specifies the image our container should be using. If we want to make use of automatic updates, the image has to be fully quallified (including registry and tag).
+- `Image` specifies the image our container shsudo -u vikunja podman logs -f vikunjaould be using. If we want to make use of automatic updates, the image has to be fully quallified (including registry and tag).
 - `AutoUpdate` is set to `registry` ([details](https://docs.podman.io/en/v5.0.1/markdown/podman-auto-update.1.html))
 - in case the image supports it, we explicitly set  the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
 - The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
 - `HealthCmd` has to be configured specifically for the image. Often a call via curl works.
+
+## Configuration & storage
+
+### bind mounts / volumes
+
+#### SELinux
+
+#### configuration file(s)
+
+#### data directories
+
+### Environment variables
+
+- `.env` files in `~service_name/.config/containers/systemd`
+  + one prefilled with sensible defaults
+  + one optional with user / use case specific values
+
+### starting the service
+
+```sh
+sudo -u service_name systemctl --user start service_name
+```
+
+### Auto update
+
+### backup
+
+## frequently used commands
+
+### recreate the systemd service definition after changes to the `.container` or `.network` files
+
+```sh
+sudo -u service_name systemctl --user daemon-reload
+```
+
+### restart the service(s) / check the status
+
+```sh
+sudo -u service_name systemctl --user restart service_name
+```
+
+```sh
+sudo -u service_name systemctl --user status service_name
+```
+
+### check the logs
+
+```sh
+sudo -u service_name  journalctl --user -u service_name -n 50
+```
+
+```sh
+sudo -u service_name podman logs -f service_name
+```
+
+## debugging
 
