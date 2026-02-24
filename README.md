@@ -144,6 +144,41 @@ HealthRetries=3
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
 - `HealthCmd` has to be configured specifically for the image. Often a call via `curl` works.
 
+### Network definition (`.network` file)
+
+By default, each rootless podman container runs in isolation and cannot reach other containers by name. If a service consists of multiple containers that need to communicate — for example an application container and a database — a shared network is needed.
+
+A `.network` file defines a named podman network that containers can join:
+
+```sh
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.network
+```
+
+The file itself typically needs no content beyond the section header:
+
+```ini
+[Network]
+```
+
+Each container that should be part of the network references it by filename (without the `.network` extension):
+
+```ini
+[Container]
+Network=service_name.network
+```
+
+Containers on the same network can address each other by name. The name used is either the explicitly set `ContainerName`:
+
+```ini
+ContainerName=service_name_app
+```
+
+or, if omitted, the default name that quadlet derives from the unit file: `systemd-<filename_without_extension>`. For example, `service_name_app.container` gets the container name `systemd-service_name_app`.
+
+Either way, the app container can connect to the database at `service_name_db:5432` (or `systemd-service_name_db:5432`) without any port being exposed on the host.
+
+Without a `.network` file, inter-container communication would require exposing ports on the host and routing traffic through `localhost`, which is both less clean and less secure.
+
 A complete example combining all sections can be found in [example_service.container](example_service.container).
 
 ## Configuration & storage
