@@ -11,6 +11,21 @@ One could also use other means to achieve the same (e.g. via `docker compose`), 
 
 This document is about setting up the service itself. In order to access the service I usually set up **Caddy** or **Nginx** as a *reverse proxy*.
 
+## Setup overview
+
+Setting up a new service follows these steps in order:
+
+1. **Create a dedicated service user** with a home directory under `/var/lib`
+2. **Enable linger** so the user's processes persist without an active login session
+3. **Create the quadlet directory** `~service_name/.config/containers/systemd`
+4. **Create data and config directories** under the service user's home
+5. **Write the `.container` file** (and optionally a `.network` file)
+6. **Create environment variable files** (`.env` and `.override.env`)
+7. **Reload the systemd daemon** so it picks up the new quadlet files
+8. **Start the service** and verify it is running
+
+Each step is described in detail in the sections below.
+
 ## (Service) users
 
 For best isolation, I would create one dedicated user account per service I want to run.
