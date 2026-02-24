@@ -133,11 +133,38 @@ HealthRetries=3
 
 ### bind mounts / volumes
 
+Bind mounts are defined in the `Container` section using the `Volume` key:
+
+```ini
+Volume=<host_path>:<container_path>:<options>
+```
+
+The `%h` specifier can be used as a shorthand for the service user's home directory.
+
 #### SELinux
+
+On SELinux-enabled systems (Fedora, RHEL), the container process is denied access to bind-mounted host directories by default, even if the file permissions are correct. You must add a relabel option to the mount:
+
+- `:Z` — relabels the host path as private to this container (use for single-container mounts)
+- `:z` — relabels the host path as shared (use when multiple containers access the same directory)
+
+Note that `:Z` recursively relabels the host directory, so only apply it to directories owned by the service user.
 
 #### configuration file(s)
 
+Configuration directories or files should be mounted read-only where possible:
+
+```ini
+Volume=%h/config:/etc/service_name:Z,ro
+```
+
 #### data directories
+
+Data and state directories are mounted writable (the default):
+
+```ini
+Volume=%h/data:/var/lib/service_name:Z
+```
 
 ### Environment variables
 
@@ -153,7 +180,29 @@ sudo -u service_name systemctl --user start service_name
 
 ### Auto update
 
+`AutoUpdate=registry` in the container file only takes effect if the `podman-auto-update.timer` is active for the service user. Enable and start it with:
+
+```sh
+sudo -u service_name systemctl --user enable --now podman-auto-update.timer
+```
+
+By default this runs a daily check and pulls updated images, restarting affected containers. To trigger an update manually:
+
+```sh
+sudo -u service_name podman auto-update
+```
+
 ### backup
+
+The `data` directory contains all persistent state and is the primary target for backups. For file-based services a live backup is usually safe; for databases it is better to stop the service first to avoid an inconsistent snapshot:
+
+```sh
+sudo -u service_name systemctl --user stop service_name
+rsync -a ~service_name/data/ /path/to/backup/
+sudo -u service_name systemctl --user start service_name
+```
+
+The `config` directory should also be backed up, though it typically changes less frequently.
 
 ## frequently used commands
 
@@ -185,3 +234,22 @@ sudo -u service_name podman logs -f service_name
 
 ## debugging
 
+### validate quadlet parsing
+
+To check that a `.container` (or `.network`) file is parsed correctly without applying any changes, run the quadlet generator in dry-run mode:
+
+```sh
+sudo -u service_name /usr/lib/systemd/system-generators/podman-system-generator --user --dryrun 2>&1
+```
+
+This prints the generated systemd unit to stdout, which is useful for spotting syntax errors or unexpected values before reloading the daemon.
+
+### run the container interactively
+
+To test the container directly, bypassing systemd, you can run it interactively as the service user:
+
+```sh
+sudo -u service_name podman run --rm -it <image> /bin/sh
+```
+
+This is useful for verifying that volume mounts, environment variables, and user mappings behave as expected.
