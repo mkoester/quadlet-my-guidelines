@@ -95,7 +95,7 @@ Next, we'll define the service itself in the `Container` section:
 
 ```ini
 [Container]
-Image=<fully qualified nome of image>
+Image=<fully qualified name of image>
 AutoUpdate=registry
 
 # User Namespace Mapping - Container UID 1000 = Host UID (service_name)
@@ -119,7 +119,7 @@ HealthRetries=3
 - `Image` specifies the image our container should be using. If we want to make use of automatic updates, the image has to be fully quallified (including registry and tag).
 - `AutoUpdate` is set to `registry` ([details](https://docs.podman.io/en/v5.0.1/markdown/podman-auto-update.1.html))
 - in case the image supports it, we explicitly set  the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
-- The `Volume`s we use also depend on the image.
+- The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
 - `HealthCmd` has to be configured specifically for the image. Often a call via curl works.
 
