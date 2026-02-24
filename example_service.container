@@ -1,0 +1,37 @@
+[Unit]
+Description=Example service
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=registry.example.com/example/image:latest
+AutoUpdate=registry
+
+# User Namespace Mapping - Container UID 1000 = Host UID (example_service)
+UserNS=keep-id:uid=1000,gid=1000
+User=1000
+Group=1000
+
+# Environment variables
+EnvironmentFile=%h/.config/containers/systemd/example_service.env
+EnvironmentFile=-%h/.config/containers/systemd/example_service.override.env
+
+# Volumes (bind mounts)
+Volume=%h/config:/etc/example_service:Z,ro
+Volume=%h/data:/var/lib/example_service:Z
+
+# Port mapping (host:container)
+PublishPort=8080:8080
+
+# Health check
+HealthCmd=curl -f http://localhost:8080/health || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target

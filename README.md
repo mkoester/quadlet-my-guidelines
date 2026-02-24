@@ -144,6 +144,8 @@ HealthRetries=3
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
 - `HealthCmd` has to be configured specifically for the image. Often a call via curl works.
 
+A complete example combining all sections can be found in [example_service.container](example_service.container).
+
 ## Configuration & storage
 
 ### bind mounts / volumes
