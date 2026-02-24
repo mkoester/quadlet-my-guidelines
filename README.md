@@ -58,3 +58,22 @@ sudo -u service_name mkdir -p ~service_name/container_name_2/{data,config,cache}
 ```
 
 ## service definition / quadlet files
+
+### auto start at boot / restart
+
+In order to let the system automatically start our service, we would add an [Install section](https://man7.org/linux/man-pages/man5/systemd.unit.5.html#[INSTALL]_SECTION_OPTIONS) to the `.container` file and tell systemd that this service should be run by default:
+
+```ini
+[Install]
+WantedBy=default.target
+```
+
+Additionally we want the service to be restarted automatically:
+
+```ini
+[Service]
+Restart=always
+TimeoutStartSec=900
+```
+
+(The value for `TimeoutStartSec` depends on the individual container image)
