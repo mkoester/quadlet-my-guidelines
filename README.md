@@ -61,6 +61,10 @@ sudo -u service_name mkdir -p ~service_name/container_name_2/{data,config,cache}
 
 The quadlet files should be in `~service_name/.config/containers/systemd`. The main configuration is done in a `.container` file (or several in case of more complex setups) and an optional `.network` file.
 
+```sh
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.container
+```
+
 ### Auto start at boot / restart
 
 In order to let the system automatically start our service, we would add an [`Install` section](https://man7.org/linux/man-pages/man5/systemd.unit.5.html#[INSTALL]_SECTION_OPTIONS) to the `.container` file and tell systemd that this service should be run by default:
