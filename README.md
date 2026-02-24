@@ -37,13 +37,13 @@ sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
 
 ## Service directories / permanent storage / volumes
 
-Most services need both, a **configuration** and some **space on disk** to store its *state*.
+Most services need both a **configuration** and some **space on disk** to store its *state*.
 The setup depends heavily on the service we want to run.
 Some services consist of multiple containers which in most cases need their own configuration and storage.
 
 ### One single container
 
-For the simple case, we would simple create 2 directories, one for configuration and one for persisting the service's data.
+For the simple case, we would simply create 2 directories, one for configuration and one for persisting the service's data.
 
 ```sh
 sudo -u service_name mkdir -p ~service_name/{data,config}
@@ -59,7 +59,7 @@ sudo -u service_name mkdir -p ~service_name/container_name_1/{data,config}
 sudo -u service_name mkdir -p ~service_name/container_name_2/{data,config,cache}
 ```
 
-## Service definition / quadlet files`.container` file
+## Service definition / quadlet files
 
 The quadlet files should be in `~service_name/.config/containers/systemd`. The main configuration is done in a `.container` file (or several in case of more complex setups) and an optional `.network` file.
 
@@ -122,7 +122,7 @@ HealthTimeout=10s
 HealthRetries=3
 ```
 
-- `Image` specifies the image our container shsudo -u vikunja podman logs -f vikunjaould be using. If we want to make use of automatic updates, the image has to be fully quallified (including registry and tag).
+- `Image` specifies the image our container should be using. If we want to make use of automatic updates, the image has to be fully qualified (including registry and tag).
 - `AutoUpdate` is set to `registry` ([details](https://docs.podman.io/en/v5.0.1/markdown/podman-auto-update.1.html))
 - in case the image supports it, we explicitly set  the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
 - The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
