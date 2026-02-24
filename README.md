@@ -220,17 +220,27 @@ Volume=%h/data:/var/lib/service_name:Z
 
 #### container runs as a different UID
 
-`UserNS=keep-id:uid=1000,gid=1000` maps container UID 1000 to the host service user. If the image runs as a different UID (e.g. `472` for Grafana, `999` for some databases), the bind-mounted directories will be inaccessible to the container process because their host-side ownership does not match.
+`UserNS=keep-id:uid=1000,gid=1000` maps container UID `1000` to the host service user. If the image runs as a different UID (e.g. `472` for Grafana, `999` for some databases), the bind-mounted directories will be inaccessible to the container process because their host-side ownership does not match.
 
-If the image supports configuring its runtime user via environment variables (commonly `PUID` / `PGID`), setting those to `1000` in the `.env` file is simpler and avoids the ownership problem entirely.
-
-But if not, you need to fix ownership. First check which UID the image uses:
+First check which UID the image uses:
 
 ```sh
 sudo -u service_name podman inspect <image> --format '{{.Config.User}}'
 ```
 
-Then fix ownership using `podman unshare`, which runs the command inside the service user's namespace — so UID `<uid>` inside the namespace refers to the container process user, not a host UID:
+**Preferred: adjust the `UserNS` mapping.** Update the `[Container]` section to map the image's UID to the host service user instead:
+
+```ini
+UserNS=keep-id:uid=<uid>,gid=<gid>
+User=<uid>
+Group=<gid>
+```
+
+This maps the container's process UID directly to the host service user, so bind-mounted directories are accessible without any ownership changes.
+
+**Alternative: use `PUID`/`PGID` env vars.** Some images support configuring their runtime user via environment variables. Setting `PUID=1000` and `PGID=1000` in the `.env` file keeps the original `UserNS` mapping intact.
+
+**Fallback: `podman unshare chown`.** If `UserNS` cannot be used, container UIDs map to subUIDs in the host's subUID range rather than the service user directly. In that case, use `podman unshare` to chown the directories within the user namespace:
 
 ```sh
 sudo -u service_name podman unshare chown -R <uid>:<gid> ~service_name/data
