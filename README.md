@@ -176,7 +176,7 @@ sudo -u service_name systemctl --user status service_name
 ### check the logs
 
 ```sh
-sudo -u service_name  journalctl --user -u service_name -n 50
+sudo -u service_name journalctl --user -u service_name -n 50
 ```
 
 ```sh
