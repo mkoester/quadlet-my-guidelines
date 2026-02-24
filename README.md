@@ -168,9 +168,35 @@ Volume=%h/data:/var/lib/service_name:Z
 
 ### Environment variables
 
-- `.env` files in `~service_name/.config/containers/systemd`
-  + one prefilled with sensible defaults
-  + one optional with user / use case specific values
+Environment variables are passed to the container via `.env` files referenced in the `Container` section:
+
+```ini
+[Container]
+EnvironmentFile=%h/.config/containers/systemd/service_name.env
+EnvironmentFile=-%h/.config/containers/systemd/service_name.override.env
+```
+
+The `-` prefix on the second file makes it optional — systemd will not fail if it is absent.
+
+The convention I use is two files:
+
+- `service_name.env` — checked into version control (or at least documented), prefilled with sensible defaults and non-sensitive values
+- `service_name.override.env` — not checked in, contains secrets and environment-specific overrides
+
+Create them as the service user:
+
+```sh
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.env
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.override.env
+```
+
+Both files use standard `KEY=value` syntax:
+
+```sh
+TZ=Europe/Berlin
+PUID=1000
+PGID=1000
+```
 
 ### starting the service
 
