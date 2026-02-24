@@ -9,6 +9,8 @@ In this document I am going to use **nano** as the *file editor*, but every othe
 
 One could also use other means to achieve the same (e.g. via `docker compose`), but I personally prefer `quadlets` (and `podman` + `systemd`).
 
+This document is about setting up the service itself. In order to access the service I usually set up **Caddy** or **Nginx** as a *reverse proxy*.
+
 ## (Service) users
 
 For best isolation, I would create one dedicated user account per service I want to run.
