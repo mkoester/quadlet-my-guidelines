@@ -192,10 +192,10 @@ sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.
 
 Both files use standard `KEY=value` syntax:
 
-```sh
+```ini
 TZ=Europe/Berlin
-PUID=1000
-PGID=1000
+UID=1000
+GID=1000
 ```
 
 ### starting the service
