@@ -142,7 +142,7 @@ HealthRetries=3
 - in case the image supports it, we explicitly set  the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
 - The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
-- `HealthCmd` has to be configured specifically for the image. Often a call via curl works.
+- `HealthCmd` has to be configured specifically for the image. Often a call via `curl` works.
 
 A complete example combining all sections can be found in [example_service.container](example_service.container).
 
