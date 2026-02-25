@@ -260,13 +260,16 @@ The `-` prefix on the second file makes it optional — systemd will not fail if
 
 The convention I use is two files:
 
-- `service_name.env` — checked into version control (or at least documented), prefilled with sensible defaults and non-sensitive values
-- `service_name.override.env` — not checked in, contains secrets and environment-specific overrides
+- `service_name.env` — checked into version control, prefilled with sensible defaults and non-sensitive values
+- (`service_name.override.env.template` — checked into version control, an empty or commented template for local overrides)
+- `service_name.override.env` — not checked in, contains secrets and environment-specific overrides; created from the template
 
 Create them as the service user:
 
 ```sh
 sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.env
+sudo -u service_name cp /path/to/repo/service_name.override.env.template ~service_name/.config/containers/systemd/service_name.override.env
+# Edit as needed:
 sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.override.env
 ```
 

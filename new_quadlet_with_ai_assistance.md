@@ -8,6 +8,8 @@ These instructions are derived from the [README](./README.md).
 - I want to use regular users
   + the home directory should be in /var/lib/
 - I want to execute commands with my regular user (with sudo), e.g. `sudo -u <service_name> ...`
+- Symlink `.container` and `.env` from the repo into `~service_name/.config/containers/systemd/`
+- For `.override.env`: create the actual `.override.env` by copying the `override.env.template` to `~service_name/.config/containers/systemd/`
 - Please create a markdown file with instructions
 
 ## Information to gather about the image
@@ -50,12 +52,12 @@ sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
 # 4. Create data and config directories
 sudo -u service_name mkdir -p ~service_name/{data,config}
 
-# 5. Write the .container file
-sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.container
+# 5. Symlink .container and .env from the repo
+sudo -u service_name ln -s /path/to/repo/service_name.container ~service_name/.config/containers/systemd/service_name.container
+sudo -u service_name ln -s /path/to/repo/service_name.env ~service_name/.config/containers/systemd/service_name.env
 
-# 6. Write env files
-sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.env
-sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.override.env
+# 6. Create .override.env from template (edit as needed)
+sudo -u service_name cp /path/to/repo/service_name.override.env.template ~service_name/.config/containers/systemd/service_name.override.env
 
 # 7. Reload and start
 sudo -u service_name systemctl --user daemon-reload
