@@ -1,0 +1,132 @@
+# New Quadlet Setup Guide
+
+A reference for setting up a new quadlet service from scratch.
+These instructions are derived from the [README](./README.md).
+
+## Information to gather about the image
+
+Before starting, resolve the following:
+
+| # | Question | Used for |
+|---|----------|----------|
+| 1 | What is the fully qualified image name (registry/image:tag)? | `Image=` |
+| 2 | What UID does the image run as? | `UserNS=`, `User=`, `Group=` |
+| 3 | Does the image support `PUID`/`PGID` env vars? | Alternative to adjusting `UserNS` |
+| 4 | What port(s) does the container expose? | `PublishPort=` |
+| 5 | What paths inside the container need to be persisted? (config, data) | `Volume=` |
+| 6 | What environment variables does the image require or support? | `.env` file |
+| 7 | Is there a health check endpoint? | `HealthCmd=` |
+| 8 | Does the service consist of multiple containers? | `.network` file needed |
+| 9 | Will the service sit behind a reverse proxy? | bind `PublishPort` to `127.0.0.1` |
+| 10 | How long can the container take to start? | `TimeoutStartSec=` |
+
+Check the image's UID:
+
+```sh
+podman inspect <image> --format '{{.Config.User}}'
+```
+
+## Setup commands
+
+Replace `service_name` throughout.
+
+```sh
+# 1. Create service user
+sudo useradd -m -d /var/lib/service_name -s /usr/sbin/nologin service_name
+
+# 2. Enable linger
+sudo loginctl enable-linger service_name
+
+# 3. Create quadlet directory
+sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
+
+# 4. Create data and config directories
+sudo -u service_name mkdir -p ~service_name/{data,config}
+
+# 5. Write the .container file
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.container
+
+# 6. Write env files
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.env
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.override.env
+
+# 7. Reload and start
+sudo -u service_name systemctl --user daemon-reload
+sudo -u service_name systemctl --user start service_name
+
+# 8. Verify
+sudo -u service_name systemctl --user status service_name
+```
+
+## `.container` file template
+
+```ini
+[Unit]
+Description=<description>
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=<registry/image:tag>
+AutoUpdate=registry
+
+# Set uid/gid to match the UID the image runs as
+UserNS=keep-id:uid=<uid>,gid=<gid>
+User=<uid>
+Group=<gid>
+
+# Environment variables
+EnvironmentFile=%h/.config/containers/systemd/service_name.env
+EnvironmentFile=-%h/.config/containers/systemd/service_name.override.env
+
+# Volumes — :Z for SELinux relabel, :ro where write access is not needed
+Volume=%h/config:<config path in container>:Z,ro
+Volume=%h/data:<data path in container>:Z
+
+# Port mapping — bind to 127.0.0.1 when behind a reverse proxy
+PublishPort=127.0.0.1:<host port>:<container port>
+
+# Health check
+HealthCmd=curl -f http://localhost:<container port>/<health endpoint> || exit 1
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+
+[Service]
+Restart=always
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
+```
+
+## UID mismatch
+
+If the image UID differs from `1000`, set `UserNS`, `User`, and `Group` to match it.
+If the image supports `PUID`/`PGID`, set them to `1000` in the `.env` file instead.
+As a last resort, use `podman unshare chown`:
+
+```sh
+sudo -u service_name podman unshare chown -R <uid>:<gid> ~service_name/data
+```
+
+## Multi-container services
+
+Create a `.network` file alongside the `.container` files:
+
+```sh
+sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.network
+```
+
+```ini
+[Network]
+```
+
+Reference it in each `.container` file:
+
+```ini
+Network=service_name.network
+ContainerName=service_name_app   # optional — default is systemd-<filename>
+```
+
+Containers on the same network reach each other by `ContainerName` (or `systemd-<filename>`).
