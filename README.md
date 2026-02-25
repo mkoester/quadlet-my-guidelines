@@ -82,25 +82,6 @@ The quadlet files should be in `~service_name/.config/containers/systemd`. The m
 sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.container
 ```
 
-### Auto start at boot / restart
-
-In order to let the system automatically start our service, we would add an [`Install` section](https://man7.org/linux/man-pages/man5/systemd.unit.5.html#[INSTALL]_SECTION_OPTIONS) to the `.container` file and tell systemd that this service should be run by default:
-
-```ini
-[Install]
-WantedBy=default.target
-```
-
-Additionally we want the service to be restarted automatically:
-
-```ini
-[Service]
-Restart=always
-TimeoutStartSec=900
-```
-
-(The value for `TimeoutStartSec` depends on the individual container image)
-
 ### Container definition
 
 We'll start with the `Unit` section with a customized description:
@@ -143,6 +124,25 @@ HealthRetries=3
 - The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally. When the service sits behind a reverse proxy, bind to localhost only to prevent direct external access.
 - `HealthCmd` has to be configured specifically for the image. Often a call via `curl` works.
+
+### Auto start at boot / restart
+
+In order to let the system automatically start our service, we would add an [`Install` section](https://man7.org/linux/man-pages/man5/systemd.unit.5.html#[INSTALL]_SECTION_OPTIONS) to the `.container` file and tell systemd that this service should be run by default:
+
+```ini
+[Install]
+WantedBy=default.target
+```
+
+Additionally we want the service to be restarted automatically:
+
+```ini
+[Service]
+Restart=always
+TimeoutStartSec=900
+```
+
+(The value for `TimeoutStartSec` depends on the individual container image)
 
 ### Network definition (`.network` file)
 
@@ -277,6 +277,8 @@ TZ=Europe/Berlin
 UID=1000
 GID=1000
 ```
+
+## Operations
 
 ### starting the service
 
