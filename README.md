@@ -274,7 +274,7 @@ Create them as the service user:
 
 ```sh
 sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.env
-sudo -u service_name cp /path/to/repo/service_name.override.env.template ~service_name/.config/containers/systemd/service_name.override.env
+sudo -u service_name cp $(pwd)/service_name.override.env.template ~service_name/.config/containers/systemd/service_name.override.env
 # Edit as needed:
 sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.override.env
 ```
