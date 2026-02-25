@@ -38,7 +38,7 @@ E.g. for a service called <service_name>, we would create a user with *no login 
 sudo useradd -m -d /var/lib/service_name -s /usr/sbin/nologin service_name
 ```
 
-In order for the service to be able run in the user's context when the user itself is not logged in, we have to allow his processes to persist
+In order for the service to be able to run in the user's context when the user itself is not logged in, we have to allow its processes to persist
 
 ```sh
 sudo loginctl enable-linger service_name
@@ -103,7 +103,7 @@ TimeoutStartSec=900
 
 ### Container definition
 
-We'll start with `Unit` section with a customized description:
+We'll start with the `Unit` section with a customized description:
 
 ```ini
 [Unit]
@@ -139,7 +139,7 @@ HealthRetries=3
 
 - `Image` specifies the image our container should be using. If we want to make use of automatic updates, the image has to be fully qualified (including registry and tag).
 - `AutoUpdate` is set to `registry` ([details](https://docs.podman.io/en/v5.0.1/markdown/podman-auto-update.1.html))
-- in case the image supports it, we explicitly set  the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
+- in case the image supports it, we explicitly set the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
 - The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
 - `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
 - `HealthCmd` has to be configured specifically for the image. Often a call via `curl` works.
