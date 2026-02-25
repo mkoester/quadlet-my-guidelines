@@ -26,7 +26,7 @@ Setting up a new service follows these steps in order:
 
 Each step is described in detail in the sections below.
 
-## (Service) users
+## Service users
 
 For best isolation, I would create one dedicated user account per service I want to run.
 One could use service accounts, but they usually don't have the necessary ranges for user and group sub IDs created automatically (needed to run rootless podman containers).
@@ -50,7 +50,7 @@ Since we need to create and store the quadlet service definitions, we create the
 sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
 ```
 
-## Service directories / permanent storage / volumes
+## Permanent storage
 
 Most services need both a **configuration** and some **space on disk** to store its *state*.
 The setup depends heavily on the service we want to run.
@@ -183,7 +183,7 @@ A complete example combining all sections can be found in [example_service.conta
 
 ## Configuration & storage
 
-### bind mounts / volumes
+### Bind mounts / volumes
 
 Bind mounts are defined in the `Container` section using the `Volume` key:
 
@@ -202,7 +202,7 @@ On SELinux-enabled systems (Fedora, RHEL), the container process is denied acces
 
 Note that `:Z` recursively relabels the host directory, so only apply it to directories owned by the service user.
 
-#### configuration file(s)
+#### Configuration file(s)
 
 Configuration directories or files should be mounted read-only where possible:
 
@@ -210,7 +210,7 @@ Configuration directories or files should be mounted read-only where possible:
 Volume=%h/config:/etc/service_name:Z,ro
 ```
 
-#### data directories
+#### Data directories
 
 Data and state directories are mounted writable (the default):
 
@@ -218,7 +218,7 @@ Data and state directories are mounted writable (the default):
 Volume=%h/data:/var/lib/service_name:Z
 ```
 
-#### container runs as a different UID
+#### Container runs as a different UID
 
 `UserNS=keep-id:uid=1000,gid=1000` maps container UID `1000` to the host service user. If the image runs as a different UID (e.g. `472` for Grafana, `999` for some databases), the bind-mounted directories will be inaccessible to the container process because their host-side ownership does not match.
 
@@ -280,7 +280,7 @@ GID=1000
 
 ## Operations
 
-### starting the service
+### Starting the service
 
 Before starting the service for the first time (and after any changes to the `.container` or `.network` files), reload the systemd daemon so it picks up the generated unit:
 
@@ -308,7 +308,7 @@ By default this runs a daily check and pulls updated images, restarting affected
 sudo -u service_name podman auto-update
 ```
 
-### backup
+### Backup
 
 The `data` directory contains all persistent state and is the primary target for backups. For file-based services a live backup is usually safe; for databases it is better to stop the service first to avoid an inconsistent snapshot:
 
@@ -320,15 +320,15 @@ sudo -u service_name systemctl --user start service_name
 
 The `config` directory should also be backed up, though it typically changes less frequently.
 
-## frequently used commands
+## Frequently used commands
 
-### recreate the systemd service definition after changes to the `.container` or `.network` files
+### Recreate the systemd service definition after changes to the `.container` or `.network` files
 
 ```sh
 sudo -u service_name systemctl --user daemon-reload
 ```
 
-### restart the service(s) / check the status
+### Restart the service(s) / check the status
 
 ```sh
 sudo -u service_name systemctl --user restart service_name
@@ -338,7 +338,7 @@ sudo -u service_name systemctl --user restart service_name
 sudo -u service_name systemctl --user status service_name
 ```
 
-### check the logs
+### Check the logs
 
 ```sh
 sudo -u service_name journalctl --user -u service_name -n 50
@@ -348,9 +348,9 @@ sudo -u service_name journalctl --user -u service_name -n 50
 sudo -u service_name podman logs -f service_name
 ```
 
-## debugging
+## Debugging
 
-### validate quadlet parsing
+### Validate quadlet parsing
 
 To check that a `.container` (or `.network`) file is parsed correctly without applying any changes, run the quadlet generator in dry-run mode:
 
@@ -360,7 +360,7 @@ sudo -u service_name /usr/lib/systemd/system-generators/podman-system-generator 
 
 This prints the generated systemd unit to stdout, which is useful for spotting syntax errors or unexpected values before reloading the daemon.
 
-### run the container interactively
+### Run the container interactively
 
 To test the container directly, bypassing systemd, you can run it interactively as the service user:
 
