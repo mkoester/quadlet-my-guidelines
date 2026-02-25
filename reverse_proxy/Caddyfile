@@ -1,0 +1,41 @@
+# /etc/caddy/Caddyfile
+
+*.my_domain.tld, my_domain.tld {
+        # Use certbot-managed certificates
+        tls /etc/letsencrypt/live/my_domain.tld/fullchain.pem /etc/letsencrypt/live/my_domain.tld/privkey.pem {
+                protocols tls1.2 tls1.3
+        }
+
+        # Enable logging
+        log {
+                output file /var/log/caddy/access.log
+                format json
+        }
+
+        # Global for all Subdomains and Apex
+        encode gzip
+
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Frame-Options "SAMEORIGIN"
+                X-Content-Type-Options "nosniff"
+                X-XSS-Protection "1; mode=block"
+                Referrer-Policy "strict-origin-when-cross-origin"
+        }
+
+        @apex host my_domain.tld
+        handle @apex {
+                header Content-Type text/html
+                respond <html><head><title>my_domain.tld</title></head><body><h1>my content</h1></body></html>
+        }
+
+        @some_service host some_service.my_domain.tld #short description of some_service
+        handle @some_service {
+                reverse_proxy localhost:1234
+        }
+
+        # Catch-all for undefined subdomains
+        handle {
+                respond "Subdomain not configured" 404
+        }
+}
