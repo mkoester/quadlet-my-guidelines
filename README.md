@@ -228,6 +228,12 @@ First check which UID the image uses:
 sudo -u service_name podman inspect <image> --format '{{.Config.User}}'
 ```
 
+If this returns a username instead of a numeric ID, look it up in `/etc/passwd` inside the container:
+
+```sh
+sudo -u service_name podman run --rm --entrypoint grep <image> <username> /etc/passwd
+```
+
 **Preferred: adjust the `UserNS` mapping.** Update the `[Container]` section to map the image's UID to the host service user instead:
 
 ```ini
