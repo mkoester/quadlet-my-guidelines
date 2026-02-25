@@ -21,10 +21,11 @@ Volume=%h/config:/etc/example_service:Z,ro
 Volume=%h/data:/var/lib/example_service:Z
 
 # Port mapping (host:container)
-PublishPort=8080:8080
+# Bind to localhost only when using a reverse proxy, to prevent direct external access
+PublishPort=127.0.0.1:1234:5678
 
 # Health check
-HealthCmd=curl -f http://localhost:8080/health || exit 1
+HealthCmd=curl -f http://localhost:1234/health || exit 1
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=3

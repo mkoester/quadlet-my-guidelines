@@ -128,7 +128,7 @@ Group=1000
 Volume=%h/...
 
 # port mapping
-PublishPort=1234:5678
+PublishPort=127.0.0.1:1234:5678
 
 # Health check
 HealthCmd=... || exit 1
@@ -141,7 +141,7 @@ HealthRetries=3
 - `AutoUpdate` is set to `registry` ([details](https://docs.podman.io/en/v5.0.1/markdown/podman-auto-update.1.html))
 - in case the image supports it, we explicitly set the user namespace mapping. This allows the executable to run with the same permissions as the service user. Whether this works and which user/group id to use depends on the image.
 - The `Volume`s we use also depend on the image. I prefer to use **bind mounts** instead of (anonymously) named volumes
-- `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally.
+- `PublishPort` has to be set according to the port you want to use locally and the port the image uses internally. When the service sits behind a reverse proxy, bind to localhost only to prevent direct external access.
 - `HealthCmd` has to be configured specifically for the image. Often a call via `curl` works.
 
 ### Network definition (`.network` file)
