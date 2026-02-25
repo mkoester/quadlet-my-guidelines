@@ -3,6 +3,13 @@
 A reference for setting up a new quadlet service from scratch.
 These instructions are derived from the [README](./README.md).
 
+## General remarks
+
+- I want to use regular users
+  + the home directory should be in /var/lib/
+- I want to execute commands with my regular user (with sudo), e.g. `sudo -u <service_name> ...`
+- Please create a markdown file with instructions
+
 ## Information to gather about the image
 
 Before starting, resolve the following:
