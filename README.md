@@ -280,6 +280,14 @@ GID=1000
 
 ### starting the service
 
+Before starting the service for the first time (and after any changes to the `.container` or `.network` files), reload the systemd daemon so it picks up the generated unit:
+
+```sh
+sudo -u service_name systemctl --user daemon-reload
+```
+
+Then start the service:
+
 ```sh
 sudo -u service_name systemctl --user start service_name
 ```
