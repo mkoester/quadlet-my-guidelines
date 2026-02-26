@@ -146,3 +146,36 @@ ContainerName=service_name_app   # optional — default is systemd-<filename>
 ```
 
 Containers on the same network reach each other by `ContainerName` (or `systemd-<filename>`).
+
+## Backup
+
+The backup strategy is:
+- A shared `backup-readers` group and a `backupuser` (login shell) are created once per server (see README)
+- Each service writes a backup to `/var/backups/service_name/` and owns that directory
+- `backupuser` has read access via the `backup-readers` group
+- A remote machine pulls via `rsync` over SSH as `backupuser`
+
+### General remarks
+
+- Create a `service_name-backup.service` (Type=oneshot) and `service_name-backup.timer` (OnCalendar=daily, Persistent=true)
+- Use the full path to the backup executable (e.g. `/usr/bin/sqlite3`) in `ExecStart`
+- Symlink both files into `~service_name/.config/systemd/user/` (not `.config/containers/systemd/`)
+- The backup command depends on the service: `sqlite3 .backup` for SQLite, `pg_dump` for PostgreSQL, `cp`/`rsync` for files
+
+### Per-service setup commands
+
+```sh
+# Create backup staging directory
+sudo mkdir -p /var/backups/service_name
+sudo chown service_name:backup-readers /var/backups/service_name
+sudo chmod 750 /var/backups/service_name
+
+# Symlink backup units from the repo
+sudo -u service_name mkdir -p ~service_name/.config/systemd/user
+sudo -u service_name ln -s $(pwd)/service_name-backup.service ~service_name/.config/systemd/user/service_name-backup.service
+sudo -u service_name ln -s $(pwd)/service_name-backup.timer ~service_name/.config/systemd/user/service_name-backup.timer
+
+# Enable and start the timer
+sudo -u service_name systemctl --user daemon-reload
+sudo -u service_name systemctl --user enable --now service_name-backup.timer
+```

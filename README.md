@@ -319,15 +319,38 @@ sudo -u service_name podman auto-update
 
 ### Backup
 
-The `data` directory contains all persistent state and is the primary target for backups. For file-based services a live backup is usually safe; for databases it is better to stop the service first to avoid an inconsistent snapshot:
+The backup strategy uses a shared `backup-readers` group and a central `/var/backups/` directory. Each service owns its subdirectory and is responsible for writing a consistent backup there. A dedicated backup user with a login shell allows a remote machine to pull the files via rsync over SSH.
+
+#### One-time server setup
 
 ```sh
-sudo -u service_name systemctl --user stop service_name
-rsync -a ~service_name/data/ /path/to/backup/
-sudo -u service_name systemctl --user start service_name
+# Create the shared group and backup user
+sudo groupadd backup-readers
+sudo useradd -m -s /bin/bash backupuser
+sudo usermod -aG backup-readers backupuser
+
+# Add the remote machine's SSH public key
+sudo -u backupuser mkdir -p ~backupuser/.ssh
+sudo -u backupuser nano ~backupuser/.ssh/authorized_keys
+sudo chmod 700 ~backupuser/.ssh && sudo chmod 600 ~backupuser/.ssh/authorized_keys
 ```
 
-The `config` directory should also be backed up, though it typically changes less frequently.
+#### Per-service setup
+
+```sh
+# Create a backup staging directory owned by the service user, readable by the backup group
+sudo mkdir -p /var/backups/service_name
+sudo chown service_name:backup-readers /var/backups/service_name
+sudo chmod 750 /var/backups/service_name
+```
+
+Each service then uses a systemd timer to write a backup to `/var/backups/service_name/` on a schedule. The exact backup command depends on the service (e.g. `sqlite3 .backup` for SQLite, `pg_dump` for PostgreSQL, or a plain `cp`/`rsync` for file-based data).
+
+#### On the remote (backup) machine
+
+```sh
+rsync -az backupuser@server:/var/backups/ /path/to/local/backups/
+```
 
 ## Frequently used commands
 
