@@ -179,3 +179,12 @@ sudo -u service_name ln -s $(pwd)/service_name-backup.timer ~service_name/.confi
 sudo -u service_name systemctl --user daemon-reload
 sudo -u service_name systemctl --user enable --now service_name-backup.timer
 ```
+
+## Image pruning
+
+The system-wide template units (`podman-image-prune@.timer` and `podman-image-prune@.service`) are assumed to already exist in `/etc/systemd/user/`. Each service user enables their own instance, with the number of days to retain as the instance name.
+
+```sh
+# Enable and start the timer (replace 30 with the desired retention period in days)
+sudo -u service_name systemctl --user enable --now podman-image-prune@30.timer
+```

@@ -317,6 +317,71 @@ By default this runs a daily check and pulls updated images, restarting affected
 sudo -u service_name podman auto-update
 ```
 
+### Image pruning
+
+Over time, old and unused container images accumulate on disk. A daily systemd timer can prune images that have not been used for a configurable number of days.
+
+The template units are written **once system-wide** by an admin. Each service user then enables their own instance via `systemctl --user`, choosing the retention period as the instance name (number of days).
+
+#### One-time system setup
+
+Write the timer template:
+
+```sh
+sudo nano /etc/systemd/user/podman-image-prune@.timer
+```
+
+```ini
+[Unit]
+Description=Daily Podman image pruning (retain %i days)
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Write the service template:
+
+```sh
+sudo nano /etc/systemd/user/podman-image-prune@.service
+```
+
+```ini
+[Unit]
+Description=Prune Podman images older than %i days
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'podman image prune --all --force --filter "until=$(( %i * 24 ))h"'
+```
+
+`%i` is the instance name — the number of days to retain. Systemd expands it before the shell runs, so `$(( %i * 24 ))` becomes e.g. `$(( 30 * 24 ))` and the shell evaluates it to hours.
+
+#### Per-service setup
+
+Enable the timer as the service user, passing the desired retention period as the instance name:
+
+```sh
+sudo -u service_name systemctl --user enable --now podman-image-prune@30.timer
+```
+
+To use a different period for another user, simply enable a different instance:
+
+```sh
+sudo -u other_service systemctl --user enable --now podman-image-prune@7.timer
+```
+
+Only images that are **not currently used by any running container** and were created more than the configured number of days ago are removed. Images pinned by active containers are never touched.
+
+To trigger a manual run:
+
+```sh
+sudo -u service_name systemctl --user start podman-image-prune@30.service
+```
+
 ### Backup
 
 The backup strategy uses a shared `backup-readers` group and a central `/var/backups/` directory. Each service owns its subdirectory and is responsible for writing a consistent backup there. A dedicated backup user with a login shell allows a remote machine to pull the files via rsync over SSH.
