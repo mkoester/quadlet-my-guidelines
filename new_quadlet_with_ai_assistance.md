@@ -8,10 +8,11 @@ These instructions are derived from the [README](./README.md).
 - I want to use regular users
   + the home directory should be in /var/lib/
 - I want to execute commands with my regular user (with sudo), e.g. `sudo -u <service_name> ...`
-- Symlink `.container` and `.env` from the repo into `~service_name/.config/containers/systemd/`
-- For `.override.env`: create the actual `.override.env` by copying the `override.env.template` to `~service_name/.config/containers/systemd/`
+- Clone the repo into the service user's home directory for isolation
+- Symlink `.container`, `.env`, and `.override.env` from the repo into `~service_name/.config/containers/systemd/`
+- For `.override.env`: copy the `.override.env.template` into the repo directory (not the systemd directory), edit it there, then symlink it — add it to `.gitignore` to keep secrets out of version control
 - Please create a markdown file with instructions
-  + assume that our working directory is the repository where the files where created (so `pwd` would give us the full directory name)
+  + use `REPO_URL` and `REPO` shell variables so the admin sets the clone location once at the top
 
 ## Information to gather about the image
 
@@ -44,7 +45,12 @@ podman run --rm --entrypoint grep <image> <username> /etc/passwd
 
 ## Setup commands
 
-Replace `service_name` throughout.
+Replace `service_name` and `<repo>` throughout.
+
+```sh
+REPO_URL=https://github.com/<user>/<repo>.git
+REPO=~service_name/<repo>
+```
 
 ```sh
 # 1. Create service user
@@ -53,24 +59,29 @@ sudo useradd -m -d /var/lib/service_name -s /usr/sbin/nologin service_name
 # 2. Enable linger
 sudo loginctl enable-linger service_name
 
-# 3. Create quadlet directory
+# 3. Clone the repo into the service user's home
+sudo -u service_name git clone $REPO_URL $REPO
+
+# 4. Create quadlet directory
 sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
 
-# 4. Create data and config directories
+# 5. Create data and config directories
 sudo -u service_name mkdir -p ~service_name/{data,config}
 
-# 5. Symlink .container and .env from the repo (run from the repo directory)
-sudo -u service_name ln -s $(pwd)/service_name.container ~service_name/.config/containers/systemd/service_name.container
-sudo -u service_name ln -s $(pwd)/service_name.env ~service_name/.config/containers/systemd/service_name.env
+# 6. Create .override.env from template and fill in required values
+sudo -u service_name cp $REPO/service_name.override.env.template $REPO/service_name.override.env
+sudo -u service_name nano $REPO/service_name.override.env
 
-# 6. Create .override.env from template (edit as needed)
-sudo -u service_name cp $(pwd)/service_name.override.env.template ~service_name/.config/containers/systemd/service_name.override.env
+# 7. Symlink .container, .env, and .override.env from the repo
+sudo -u service_name ln -s $REPO/service_name.container ~service_name/.config/containers/systemd/service_name.container
+sudo -u service_name ln -s $REPO/service_name.env ~service_name/.config/containers/systemd/service_name.env
+sudo -u service_name ln -s $REPO/service_name.override.env ~service_name/.config/containers/systemd/service_name.override.env
 
-# 7. Reload and start
+# 8. Reload and start
 sudo -u service_name systemctl --user daemon-reload
 sudo -u service_name systemctl --user start service_name
 
-# 8. Verify
+# 9. Verify
 sudo -u service_name systemctl --user status service_name
 ```
 
@@ -172,8 +183,8 @@ sudo chmod 750 /var/backups/service_name
 
 # Symlink backup units from the repo
 sudo -u service_name mkdir -p ~service_name/.config/systemd/user
-sudo -u service_name ln -s $(pwd)/service_name-backup.service ~service_name/.config/systemd/user/service_name-backup.service
-sudo -u service_name ln -s $(pwd)/service_name-backup.timer ~service_name/.config/systemd/user/service_name-backup.timer
+sudo -u service_name ln -s $REPO/service_name-backup.service ~service_name/.config/systemd/user/service_name-backup.service
+sudo -u service_name ln -s $REPO/service_name-backup.timer ~service_name/.config/systemd/user/service_name-backup.timer
 
 # Enable and start the timer
 sudo -u service_name systemctl --user daemon-reload
