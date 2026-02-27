@@ -268,15 +268,15 @@ The convention I use is two files:
 
 - `service_name.env` — checked into version control, prefilled with sensible defaults and non-sensitive values
 - (`service_name.override.env.template` — checked into version control, an empty or commented template for local overrides)
-- `service_name.override.env` — not checked in, contains secrets and environment-specific overrides; created from the template
+- `service_name.override.env` — not checked in, gitignored, lives in the repo directory alongside the template; contains secrets and environment-specific overrides; created from the template and symlinked into the systemd directory
 
-Create them as the service user:
+Create the override file and symlink it:
 
 ```sh
-sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.env
-sudo -u service_name cp $(pwd)/service_name.override.env.template ~service_name/.config/containers/systemd/service_name.override.env
+sudo -u service_name cp $REPO/service_name.override.env.template $REPO/service_name.override.env
 # Edit as needed:
-sudo -u service_name nano ~service_name/.config/containers/systemd/service_name.override.env
+sudo -u service_name nano $REPO/service_name.override.env
+sudo -u service_name ln -s $REPO/service_name.override.env ~service_name/.config/containers/systemd/service_name.override.env
 ```
 
 Both files use standard `KEY=value` syntax:
