@@ -27,7 +27,7 @@ Before starting, resolve the following:
 | 6 | What environment variables does the image require or support? | `.env` file |
 | 7 | Is there a health check endpoint? | `HealthCmd=` |
 | 8 | Does the service consist of multiple containers? | `.network` file needed |
-| 9 | Will the service sit behind a reverse proxy? | bind `PublishPort` to `127.0.0.1` |
+| 9 | Will the service sit behind a reverse proxy? | bind `PublishPort` to `127.0.0.1`, create DNS entry |
 | 10 | How long can the container take to start? | `TimeoutStartSec=` |
 
 Check the image's UID:
