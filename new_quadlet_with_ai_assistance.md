@@ -48,14 +48,14 @@ podman run --rm --entrypoint grep <image> <username> /etc/passwd
 Replace `service_name` and `<repo>` throughout.
 
 ```sh
+# 1. Create service user
+sudo useradd -m -d /var/lib/service_name -s /usr/sbin/nologin service_name
+
 REPO_URL=https://github.com/<user>/<repo>.git
 REPO=~service_name/<repo>
 ```
 
 ```sh
-# 1. Create service user
-sudo useradd -m -d /var/lib/service_name -s /usr/sbin/nologin service_name
-
 # 2. Enable linger
 sudo loginctl enable-linger service_name
 
