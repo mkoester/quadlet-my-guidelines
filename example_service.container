@@ -14,7 +14,7 @@ Group=1000
 
 # Environment variables
 EnvironmentFile=%h/.config/containers/systemd/example_service.env
-EnvironmentFile=-%h/.config/containers/systemd/example_service.override.env
+EnvironmentFile=%h/.config/containers/systemd/example_service.override.env
 
 # Volumes (bind mounts)
 Volume=%h/config:/etc/example_service:Z,ro

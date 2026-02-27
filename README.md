@@ -259,10 +259,8 @@ Environment variables are passed to the container via `.env` files referenced in
 ```ini
 [Container]
 EnvironmentFile=%h/.config/containers/systemd/service_name.env
-EnvironmentFile=-%h/.config/containers/systemd/service_name.override.env
+EnvironmentFile=%h/.config/containers/systemd/service_name.override.env
 ```
-
-The `-` prefix on the second file makes it optional — systemd will not fail if it is absent.
 
 The convention I use is two files:
 
@@ -294,13 +292,13 @@ GID=1000
 Before starting the service for the first time (and after any changes to the `.container` or `.network` files), reload the systemd daemon so it picks up the generated unit:
 
 ```sh
-sudo -u service_name systemctl --user daemon-reload
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user daemon-reload
 ```
 
 Then start the service:
 
 ```sh
-sudo -u service_name systemctl --user start service_name
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user start service_name
 ```
 
 ### Auto update
@@ -308,7 +306,7 @@ sudo -u service_name systemctl --user start service_name
 `AutoUpdate=registry` in the container file only takes effect if the `podman-auto-update.timer` is active for the service user. Enable and start it with:
 
 ```sh
-sudo -u service_name systemctl --user enable --now podman-auto-update.timer
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user enable --now podman-auto-update.timer
 ```
 
 By default this runs a daily check and pulls updated images, restarting affected containers. To trigger an update manually:
@@ -365,13 +363,13 @@ ExecStart=/bin/sh -c 'podman image prune --all --force --filter "until=$(( %i * 
 Enable the timer as the service user, passing the desired retention period as the instance name:
 
 ```sh
-sudo -u service_name systemctl --user enable --now podman-image-prune@30.timer
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user enable --now podman-image-prune@30.timer
 ```
 
 To use a different period for another user, simply enable a different instance:
 
 ```sh
-sudo -u other_service systemctl --user enable --now podman-image-prune@7.timer
+sudo -u other_service XDG_RUNTIME_DIR=/run/user/$(id -u other_service) systemctl --user enable --now podman-image-prune@7.timer
 ```
 
 Only images that are **not currently used by any running container** and were created more than the configured number of days ago are removed. Images pinned by active containers are never touched.
@@ -379,7 +377,7 @@ Only images that are **not currently used by any running container** and were cr
 To trigger a manual run:
 
 ```sh
-sudo -u service_name systemctl --user start podman-image-prune@30.service
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user start podman-image-prune@30.service
 ```
 
 ### Backup
@@ -422,23 +420,23 @@ rsync -az backupuser@server:/var/backups/ /path/to/local/backups/
 ### Recreate the systemd service definition after changes to the `.container` or `.network` files
 
 ```sh
-sudo -u service_name systemctl --user daemon-reload
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user daemon-reload
 ```
 
 ### Restart the service(s) / check the status
 
 ```sh
-sudo -u service_name systemctl --user restart service_name
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user restart service_name
 ```
 
 ```sh
-sudo -u service_name systemctl --user status service_name
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user status service_name
 ```
 
 ### Check the logs
 
 ```sh
-sudo -u service_name journalctl --user -u service_name -n 50
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) journalctl --user -u service_name -n 50
 ```
 
 ```sh

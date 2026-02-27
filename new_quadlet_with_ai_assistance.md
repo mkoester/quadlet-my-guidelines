@@ -78,11 +78,11 @@ sudo -u service_name ln -s $REPO/service_name.env ~service_name/.config/containe
 sudo -u service_name ln -s $REPO/service_name.override.env ~service_name/.config/containers/systemd/service_name.override.env
 
 # 8. Reload and start
-sudo -u service_name systemctl --user daemon-reload
-sudo -u service_name systemctl --user start service_name
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user daemon-reload
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user start service_name
 
 # 9. Verify
-sudo -u service_name systemctl --user status service_name
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user status service_name
 ```
 
 ## `.container` file template
@@ -104,7 +104,7 @@ Group=<gid>
 
 # Environment variables
 EnvironmentFile=%h/.config/containers/systemd/service_name.env
-EnvironmentFile=-%h/.config/containers/systemd/service_name.override.env
+EnvironmentFile=%h/.config/containers/systemd/service_name.override.env
 
 # Volumes — :Z for SELinux relabel, :ro where write access is not needed
 Volume=%h/config:<config path in container>:Z,ro
@@ -187,8 +187,8 @@ sudo -u service_name ln -s $REPO/service_name-backup.service ~service_name/.conf
 sudo -u service_name ln -s $REPO/service_name-backup.timer ~service_name/.config/systemd/user/service_name-backup.timer
 
 # Enable and start the timer
-sudo -u service_name systemctl --user daemon-reload
-sudo -u service_name systemctl --user enable --now service_name-backup.timer
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user daemon-reload
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user enable --now service_name-backup.timer
 ```
 
 ## Image pruning
@@ -197,5 +197,5 @@ The system-wide template units (`podman-image-prune@.timer` and `podman-image-pr
 
 ```sh
 # Enable and start the timer (replace 30 with the desired retention period in days)
-sudo -u service_name systemctl --user enable --now podman-image-prune@30.timer
+sudo -u service_name XDG_RUNTIME_DIR=/run/user/$(id -u service_name) systemctl --user enable --now podman-image-prune@30.timer
 ```
