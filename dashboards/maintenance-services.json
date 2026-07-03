@@ -1,0 +1,165 @@
+{
+  "__requires": [
+    { "type": "datasource", "id": "loki", "name": "Loki", "version": "1.0.0" },
+    { "type": "grafana", "id": "grafana", "name": "Grafana", "version": "10.0.0" },
+    { "type": "panel", "id": "logs", "name": "Logs", "version": "" },
+    { "type": "panel", "id": "barchart", "name": "Bar chart", "version": "" }
+  ],
+  "title": "Maintenance Services",
+  "uid": "maintenance-services",
+  "tags": ["loki", "maintenance", "backup", "podman"],
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": { "from": "now-3d", "to": "now" },
+  "timepicker": {},
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "links": [],
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({job=\"systemd-journal\", unit=~\".*-backup\\\\.service|podman-image-prune@.+\\\\.service|podman-auto-update\\\\.service\"}, host)",
+        "query": "label_values({job=\"systemd-journal\", unit=~\".*-backup\\\\.service|podman-image-prune@.+\\\\.service|podman-auto-update\\\\.service\"}, host)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "hide": 0
+      },
+      {
+        "name": "service",
+        "label": "Service",
+        "type": "query",
+        "datasource": { "type": "loki", "uid": "loki" },
+        "definition": "label_values({job=\"systemd-journal\", host=~\"$host\", unit=~\".*-backup\\\\.service|podman-image-prune@.+\\\\.service|podman-auto-update\\\\.service\"}, unit)",
+        "query": "label_values({job=\"systemd-journal\", host=~\"$host\", unit=~\".*-backup\\\\.service|podman-image-prune@.+\\\\.service|podman-auto-update\\\\.service\"}, unit)",
+        "refresh": 2,
+        "sort": 1,
+        "multi": true,
+        "includeAll": true,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Events over time",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 0 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "xField": "Time",
+        "stacking": "normal",
+        "legend": { "displayMode": "list", "placement": "bottom" }
+      },
+      "fieldConfig": {
+        "defaults": { "custom": { "lineWidth": 0, "fillOpacity": 80 } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "info"    }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green"  } }] },
+          { "matcher": { "id": "byName", "options": "warn"    }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "orange" } }] },
+          { "matcher": { "id": "byName", "options": "error"   }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red"    } }] },
+          { "matcher": { "id": "byName", "options": "fatal"   }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "purple" } }] },
+          { "matcher": { "id": "byName", "options": "unknown" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "gray"   } }] }
+        ]
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (level) (count_over_time({job=\"systemd-journal\", host=~\"$host\", unit=~\"$service\", level=~\"warn|error|fatal|unknown\"}[$__auto]))",
+          "legendFormat": "{{level}}"
+        },
+        {
+          "refId": "B",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "sum by (level) (count_over_time({job=\"systemd-journal\", host=~\"$host\", unit=~\"$service\", level=\"info\"}\n  |~ `SERVICE_STOP|auto-update|registry\\s+(true|false)|is done`\n  [$__auto]))",
+          "legendFormat": "{{level}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Errors & Warnings",
+      "type": "logs",
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 8 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": true
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"systemd-journal\", host=~\"$host\", unit=~\"$service\", level=~\"warn|error|fatal|unknown\"}",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Successful runs",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 20 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": false,
+        "prettifyLogMessage": false,
+        "showCommonLabels": true,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"systemd-journal\", host=~\"$host\", unit=~\"$service\", level=\"info\"}\n  |~ `SERVICE_STOP|auto-update|registry\\s+(true|false)|is done`",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Image updates pulled",
+      "type": "logs",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 30 },
+      "datasource": { "type": "loki", "uid": "loki" },
+      "options": {
+        "dedupStrategy": "none",
+        "enableLogDetails": false,
+        "prettifyLogMessage": false,
+        "showCommonLabels": true,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": { "type": "loki", "uid": "loki" },
+          "expr": "{job=\"systemd-journal\", host=~\"$host\", unit=~\"$service\", level=\"info\"}\n  |~ `registry.+true`",
+          "queryType": "range"
+        }
+      ]
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}
