@@ -404,7 +404,7 @@ sudo chmod 700 ~backupuser/.ssh && sudo chmod 600 ~backupuser/.ssh/authorized_ke
 # Create a backup staging directory owned by the service user, readable by the backup group
 sudo mkdir -p /var/backups/service_name
 sudo chown service_name:backup-readers /var/backups/service_name
-sudo chmod 750 /var/backups/service_name
+sudo chmod 2750 /var/backups/service_name
 ```
 
 Each service then uses a systemd timer to write a backup to `/var/backups/service_name/` on a schedule. The exact backup command depends on the service (e.g. `sqlite3 .backup` for SQLite, `pg_dump` for PostgreSQL, or a plain `cp`/`rsync` for file-based data).
