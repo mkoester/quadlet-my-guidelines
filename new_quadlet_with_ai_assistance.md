@@ -176,10 +176,10 @@ The backup strategy is:
 ### Per-service setup commands
 
 ```sh
-# Create backup staging directory
+# Create backup staging directory (setgid bit so the group is inherited)
 sudo mkdir -p /var/backups/service_name
 sudo chown service_name:backup-readers /var/backups/service_name
-sudo chmod 750 /var/backups/service_name
+sudo chmod 2750 /var/backups/service_name
 
 # Symlink backup units from the repo
 sudo -u service_name mkdir -p ~service_name/.config/systemd/user
