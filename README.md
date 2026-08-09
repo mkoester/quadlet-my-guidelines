@@ -202,6 +202,42 @@ On SELinux-enabled systems (Fedora, RHEL), the container process is denied acces
 
 Note that `:Z` recursively relabels the host directory, so only apply it to directories owned by the service user.
 
+##### Mounting a directory another service owns
+
+Neither `:z` nor `:Z` is right when the mount source is maintained by a *different* service (a sync
+client, another daemon), or is a **symlink** to such a tree — podman resolves the symlink host-side,
+so the relabel reaches through to the target. Both options relabel recursively **on every container
+start**, which means writing SELinux labels into data this unit does not own; `:Z` additionally locks
+that tree to a single container.
+
+Instead, omit the relabel option and label the target once, as part of host setup:
+
+```sh
+sudo semanage fcontext -a -t container_file_t "/path/to/shared/tree(/.*)?"
+sudo restorecon -Rv /path/to/shared/tree
+```
+
+Files the other service creates later inherit `container_file_t` from the parent directory, so
+ongoing writes need no further action. The `semanage` rule (rather than a bare `chcon`) is what makes
+this survive a later `restorecon`, `fixfiles`, or `/.autorelabel` — those reset files to what policy
+says they should be, which silently revokes the container's access if no rule exists.
+
+Two things to keep in mind:
+
+- **Read-only sharing is enforced by the permission bits, not by the mount flag.** In rootless Podman
+  container-root maps to the service user, and `CAP_DAC_OVERRIDE` inside a user namespace does not
+  apply to files owned by an **unmapped** uid. So a tree owned by another service user with no `w`
+  bit for *other* genuinely cannot be written from the container. Add `:ro` as a second layer, and
+  grant traversal through the directory chain (`chmod 0711` on the parent) rather than by loosening
+  the files.
+- **Failure looks like empty, not broken.** A missing label surfaces as an empty directory inside the
+  container rather than an error. Verify explicitly:
+
+  ```sh
+  sudo -u <service_name> XDG_RUNTIME_DIR=/run/user/$(id -u <service_name>) podman exec systemd-<service_name> ls <container_path>
+  sudo ausearch -m avc -ts recent
+  ```
+
 #### Configuration file(s)
 
 Configuration directories or files should be mounted read-only where possible:
