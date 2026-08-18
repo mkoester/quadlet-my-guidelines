@@ -2,10 +2,7 @@
 
 ## About
 
-In this document I want to collect my guidelines / best practises when it comes to hosting services on a (virtual) server.
-I prefer to use **Fedora**, but this should work on all (linux) systems supporting **Podman** and **quadlets**.
-You need to be able to run commands via **sudo** to set everything up (or run every service with your user account, which I would not recommend).
-In this document I am going to use **nano** as the *file editor*, but every other editor like **vim** or **emacs** would also work similarly.
+In this document I want to collect my guidelines / best practises when it comes to hosting services on a (virtual) server. I prefer to use **Fedora**, but this should work on all (linux) systems supporting **Podman** and **quadlets**. You need to be able to run commands via **sudo** to set everything up (or run every service with your user account, which I would not recommend). In this document I am going to use **nano** as the *file editor*, but every other editor like **vim** or **emacs** would also work similarly.
 
 One could also use other means to achieve the same (e.g. via `docker compose`), but I personally prefer `quadlets` (and `podman` + `systemd`).
 
@@ -28,9 +25,7 @@ Each step is described in detail in the sections below.
 
 ## Service users
 
-For best isolation, I would create one dedicated user account per service I want to run.
-One could use service accounts, but they usually don't have the necessary ranges for user and group sub IDs created automatically (needed to run rootless podman containers).
-Therefore, we use regular users and create their home directory in [/var/lib](https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s08.html).
+For best isolation, I would create one dedicated user account per service I want to run. One could use service accounts, but they usually don't have the necessary ranges for user and group sub IDs created automatically (needed to run rootless podman containers). Therefore, we use regular users and create their home directory in [/var/lib](https://refspecs.linuxfoundation.org/FHS_3.0/fhs/ch05s08.html).
 
 E.g. for a service called <service_name>, we would create a user with *no login shell*
 
@@ -52,9 +47,7 @@ sudo -u service_name mkdir -p ~service_name/.config/containers/systemd
 
 ## Permanent storage
 
-Most services need both a **configuration** and some **space on disk** to store its *state*.
-The setup depends heavily on the service we want to run.
-Some services consist of multiple containers which in most cases need their own configuration and storage.
+Most services need both a **configuration** and some **space on disk** to store its *state*. The setup depends heavily on the service we want to run. Some services consist of multiple containers which in most cases need their own configuration and storage.
 
 ### One single container
 
@@ -66,8 +59,7 @@ sudo -u service_name mkdir -p ~service_name/{data,config}
 
 ### Several containers
 
-In case a service requires several containers to operate, I prefer to create one directory per container.
-Inside these I would then create the necessary subdirectories for each container individually, e.g.
+In case a service requires several containers to operate, I prefer to create one directory per container. Inside these I would then create the necessary subdirectories for each container individually, e.g.
 
 ```sh
 sudo -u service_name mkdir -p ~service_name/container_name_1/{data,config}
@@ -204,11 +196,7 @@ Note that `:Z` recursively relabels the host directory, so only apply it to dire
 
 ##### Mounting a directory another service owns
 
-Neither `:z` nor `:Z` is right when the mount source is maintained by a *different* service (a sync
-client, another daemon), or is a **symlink** to such a tree — podman resolves the symlink host-side,
-so the relabel reaches through to the target. Both options relabel recursively **on every container
-start**, which means writing SELinux labels into data this unit does not own; `:Z` additionally locks
-that tree to a single container.
+Neither `:z` nor `:Z` is right when the mount source is maintained by a *different* service (a sync client, another daemon), or is a **symlink** to such a tree — podman resolves the symlink host-side, so the relabel reaches through to the target. Both options relabel recursively **on every container start**, which means writing SELinux labels into data this unit does not own; `:Z` additionally locks that tree to a single container.
 
 Instead, omit the relabel option and label the target once, as part of host setup:
 
@@ -217,21 +205,12 @@ sudo semanage fcontext -a -t container_file_t "/path/to/shared/tree(/.*)?"
 sudo restorecon -Rv /path/to/shared/tree
 ```
 
-Files the other service creates later inherit `container_file_t` from the parent directory, so
-ongoing writes need no further action. The `semanage` rule (rather than a bare `chcon`) is what makes
-this survive a later `restorecon`, `fixfiles`, or `/.autorelabel` — those reset files to what policy
-says they should be, which silently revokes the container's access if no rule exists.
+Files the other service creates later inherit `container_file_t` from the parent directory, so ongoing writes need no further action. The `semanage` rule (rather than a bare `chcon`) is what makes this survive a later `restorecon`, `fixfiles`, or `/.autorelabel` — those reset files to what policy says they should be, which silently revokes the container's access if no rule exists.
 
 Two things to keep in mind:
 
-- **Read-only sharing is enforced by the permission bits, not by the mount flag.** In rootless Podman
-  container-root maps to the service user, and `CAP_DAC_OVERRIDE` inside a user namespace does not
-  apply to files owned by an **unmapped** uid. So a tree owned by another service user with no `w`
-  bit for *other* genuinely cannot be written from the container. Add `:ro` as a second layer, and
-  grant traversal through the directory chain (`chmod 0711` on the parent) rather than by loosening
-  the files.
-- **Failure looks like empty, not broken.** A missing label surfaces as an empty directory inside the
-  container rather than an error. Verify explicitly:
+- **Read-only sharing is enforced by the permission bits, not by the mount flag.** In rootless Podman container-root maps to the service user, and `CAP_DAC_OVERRIDE` inside a user namespace does not apply to files owned by an **unmapped** uid. So a tree owned by another service user with no `w` bit for *other* genuinely cannot be written from the container. Add `:ro` as a second layer, and grant traversal through the directory chain (`chmod 0711` on the parent) rather than by loosening the files.
+- **Failure looks like empty, not broken.** A missing label surfaces as an empty directory inside the container rather than an error. Verify explicitly:
 
   ```sh
   sudo -u <service_name> XDG_RUNTIME_DIR=/run/user/$(id -u <service_name>) podman exec systemd-<service_name> ls <container_path>

@@ -1,7 +1,6 @@
 # New Quadlet Setup Guide
 
-A reference for setting up a new quadlet service from scratch.
-These instructions are derived from the [README](./README.md).
+A reference for setting up a new quadlet service from scratch. These instructions are derived from the [README](./README.md).
 
 ## General remarks
 
@@ -129,9 +128,7 @@ WantedBy=default.target
 
 ## UID mismatch
 
-If the image UID differs from `1000`, set `UserNS`, `User`, and `Group` to match it.
-If the image supports `PUID`/`PGID`, set them to `1000` in the `.env` file instead.
-As a last resort, use `podman unshare chown`:
+If the image UID differs from `1000`, set `UserNS`, `User`, and `Group` to match it. If the image supports `PUID`/`PGID`, set them to `1000` in the `.env` file instead. As a last resort, use `podman unshare chown`:
 
 ```sh
 sudo -u service_name podman unshare chown -R <uid>:<gid> ~service_name/data
