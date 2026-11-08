@@ -403,6 +403,9 @@ The backup strategy uses a shared `backup-readers` group and a central `/var/bac
 
 ```sh
 # Create the shared group and backup user
+# /var/backups: root-owned 0755 — traversable for the service users, writable by root only.
+# Never group/world-writable: anyone could plant a /var/backups/<svc> or files the pull copies.
+sudo install -d -m 0755 -o root -g root /var/backups
 sudo groupadd backup-readers
 sudo useradd -m -s /bin/bash backupuser
 sudo usermod -aG backup-readers backupuser
