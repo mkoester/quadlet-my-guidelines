@@ -415,14 +415,27 @@ sudo chmod 700 ~backupuser/.ssh && sudo chmod 600 ~backupuser/.ssh/authorized_ke
 
 #### Per-service setup
 
+**Read access comes from an ACL, not from the directory's group.** The backup units run as the service user, who is not a member of `backup-readers`. Such a user cannot give a file that group, and a `chmod` it runs silently drops the setgid bit. On top of that, `rsync -a` copies the source's group and mode. So group ownership drifts back to `<svc>:<svc>` and `backupuser` loses access, with no error anywhere. A default ACL is inherited by every new file whatever its group, and the service user's `chmod` never removes it. That is why every backup unit also sets `UMask=0027` and passes `o-rwx` in rsync's `--chmod`: the ACL grants read, and nothing else may.
+
 ```sh
 # Create a backup staging directory owned by the service user, readable by the backup group
 sudo mkdir -p /var/backups/service_name
 sudo chown service_name:backup-readers /var/backups/service_name
 sudo chmod 2750 /var/backups/service_name
+sudo setfacl -R -m g:backup-readers:rX,d:g:backup-readers:rX /var/backups/service_name
 ```
 
-Each service then uses a systemd timer to write a backup to `/var/backups/service_name/` on a schedule. The exact backup command depends on the service (e.g. `sqlite3 .backup` for SQLite, `pg_dump` for PostgreSQL, or a plain `cp`/`rsync` for file-based data).
+Each service then uses a systemd timer to write a backup to `/var/backups/service_name/` on a schedule. The exact backup command depends on the service (e.g. `sqlite3 .backup` for SQLite, `pg_dump` for PostgreSQL, or a plain `cp`/`rsync` for file-based data). Every unit sets `UMask=0027` in `[Service]`, and every `rsync` passes `--chmod=Dg+rx,Fg+r,o-rwx`.
+
+To bring an **existing** directory onto the ACL (`setfacl -R` with a `d:` entry fails on regular files, so the default ACL goes on directories only):
+
+```sh
+sudo chmod -R o-rwx /var/backups/service_name
+sudo setfacl -R -m g:backup-readers:rX /var/backups/service_name
+sudo find /var/backups/service_name -type d -exec setfacl -m d:g:backup-readers:rX {} +
+```
+
+Check: `sudo -u backupuser find /var/backups/service_name ! -readable` prints nothing.
 
 #### On the remote (backup) machine
 

@@ -160,11 +160,12 @@ Containers on the same network reach each other by `ContainerName` (or `systemd-
 The backup strategy is:
 - A shared `backup-readers` group and a `backupuser` (login shell) are created once per server (see README)
 - Each service writes a backup to `/var/backups/service_name/` and owns that directory
-- `backupuser` has read access via the `backup-readers` group
+- `backupuser` has read access via a default ACL for the `backup-readers` group. Group ownership alone is not enough: see README § Backup for why it drifts
 - A remote machine pulls via `rsync` over SSH as `backupuser`
 
 ### General remarks
 
+- Set `UMask=0027` in the backup unit's `[Service]`, and give every `rsync` `--chmod=Dg+rx,Fg+r,o-rwx`. `rsync -a` copies the source's mode, so without that a source dir that is 755 makes the backup world-readable
 - Create a `service_name-backup.service` (Type=oneshot) and `service_name-backup.timer` (OnCalendar=daily, Persistent=true)
 - Use the full path to the backup executable (e.g. `/usr/bin/sqlite3`) in `ExecStart`
 - Symlink both files into `~service_name/.config/systemd/user/` (not `.config/containers/systemd/`)
@@ -173,10 +174,11 @@ The backup strategy is:
 ### Per-service setup commands
 
 ```sh
-# Create backup staging directory (setgid bit so the group is inherited)
+# Create backup staging directory (setgid + default ACL for backup-readers)
 sudo mkdir -p /var/backups/service_name
 sudo chown service_name:backup-readers /var/backups/service_name
 sudo chmod 2750 /var/backups/service_name
+sudo setfacl -R -m g:backup-readers:rX,d:g:backup-readers:rX /var/backups/service_name
 
 # Symlink backup units from the repo
 sudo -u service_name mkdir -p ~service_name/.config/systemd/user
